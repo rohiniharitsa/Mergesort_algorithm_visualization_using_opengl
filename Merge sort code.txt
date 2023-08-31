@@ -1,0 +1,272 @@
+#include <GL/glut.h>
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <string>
+
+// Maximum number of elements in the array
+const int MAX_SIZE = 10;
+
+// Array to be sorted
+int array[MAX_SIZE];
+int n;
+
+// Global variables for visualization
+int minVal, maxVal;
+int screenWidth, screenHeight;
+
+void draw_stuff();
+void merge(int arr[], int low, int mid, int high);
+void merge_sort(int arr[], int low, int high);
+void display();
+void init();
+void print_bitmap_string(char* s);
+
+void reshape(int width, int height) {
+    screenWidth = width;
+    screenHeight = height;
+    glViewport(0, 0, screenWidth, screenHeight);
+}
+
+
+
+void set_window_size() {
+    screenWidth = glutGet(GLUT_SCREEN_WIDTH);
+    screenHeight = glutGet(GLUT_SCREEN_HEIGHT);
+
+    int windowWidth = static_cast<int>(screenWidth * 0.8);
+    int windowHeight = static_cast<int>(screenHeight * 0.8);
+
+    int windowPosX = (screenWidth - windowWidth) / 2;
+    int windowPosY = (screenHeight - windowHeight) / 2;
+
+    glutInitWindowPosition(windowPosX, windowPosY);
+    glutInitWindowSize(windowWidth, windowHeight);
+}
+
+void merge(int arr[], int low, int mid, int high) {
+    int i, j, k;
+    int n1 = mid - low + 1;
+    int n2 = high - mid;
+
+    // Create temporary arrays
+    int L[n1], R[n2];
+
+    // Copy data to temporary arrays L[] and R[]
+    for (i = 0; i < n1; i++)
+        L[i] = arr[low + i];
+    for (j = 0; j < n2; j++)
+        R[j] = arr[mid + 1 + j];
+
+    // Merge the temporary arrays back into arr[low..high]
+    i = 0;
+    j = 0;
+    k = low;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    // Copy the remaining elements of L[], if there are any
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+
+    // Copy the remaining elements of R[], if there are any
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+
+    }
+}
+
+void merge_sort(int arr[], int low, int high) {
+    if (low < high) {
+        int mid = low + (high - low) / 2;
+ // Visualize the sorting process
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glLoadIdentity();
+
+        // Display the elements as small blocks with separations
+        float blockSize = 2.0 / (3 * n);
+        for (int i = 0; i < n; i++) {
+float blockHeight = static_cast<float>(array[i] - minVal + 1) / (maxVal - minVal + 1);
+            float xPos = -1.0 + (i * 3 + 1) * blockSize;
+            float yPos = -1.0;
+
+            // Set color based on the current position
+            if (i >= low && i <= high) {
+                glColor3f(1.0, 0.0, 0.0); // Red color for the divided section
+            } else {
+                glColor3f(0.0, 0.0, 1.0); // Blue color
+            }
+
+            // Draw the block
+            glBegin(GL_QUADS);
+            glVertex2f(xPos, yPos);
+            glVertex2f(xPos + blockSize, yPos);
+            glVertex2f(xPos + blockSize, yPos + blockHeight);
+            glVertex2f(xPos, yPos + blockHeight);
+            glEnd();
+
+            // Display the number inside the block
+            glColor3f(0.0, 0.0, 0.0); // Black color
+            glRasterPos2f(xPos + blockSize / 2.0 - 0.01, yPos + blockHeight / 2.0 - 0.01);
+            std::string number = std::to_string(arr[i]);
+            for (char c : number) {
+                glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, c);
+            }
+        }
+
+        glFlush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1800)); // Delay for visualization
+        merge_sort(arr, low, mid);
+        merge_sort(arr, mid + 1, high);
+
+        merge(arr, low, mid, high);
+
+    }
+}
+void drawText(const char* text, float x, float y, float r, float g, float b) {
+    glColor3f(r, g, b);
+    glRasterPos2f(x, y);
+
+    while (*text) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *text);
+        ++text;
+    }
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    draw_stuff();
+    glLoadIdentity();
+
+drawText("MERGESORT", -0.2, 0.9,1.0,0.0,1.0);
+    // Find the maximum value in the array
+    int maxVal = array[0];
+    for (int i = 1; i < n; i++) {
+        if (array[i] > maxVal) {
+            maxVal = array[i];
+        }
+    }
+
+    // Display the initial array
+    for (int i = 0; i < n; i++) {
+        float blockSize = 2.0 / (3 * n);
+float blockHeight = static_cast<float>(array[i] - minVal + 1) / (maxVal - minVal + 1);
+        float xPos = -1.0 + (i * 3 + 1) * blockSize;
+        float yPos = -1.0;
+
+        // Set color based on the sign of the number
+        if (array[i] < 0) {
+            glColor3f(1.0, 0.0, 0.0); // Red color for negative numbers
+        } else if(array[i]>0) {
+            glColor3f(0.0, 0.0, 1.0); // Blue color for non-negative numbers
+        }
+        else{
+            glColor3f(0.0, 1.0, 1.0); //for 0
+        }
+
+        // Draw the block
+        glBegin(GL_QUADS);
+        glVertex2f(xPos, yPos);
+        glVertex2f(xPos + blockSize, yPos);
+        glVertex2f(xPos + blockSize, yPos + blockHeight);
+        glVertex2f(xPos, yPos + blockHeight);
+        glEnd();
+
+        // Display the number inside the block
+        glColor3f(0.0, 0.0, 0.0); // Black color
+        glRasterPos2f(xPos + blockSize / 2.0 - 0.02, yPos + blockHeight / 2.0 - 0.02);
+        std::string number = std::to_string(array[i]);
+        for (char c : number) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+        }
+    }
+
+
+    glFlush();
+}
+
+
+
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+}
+
+void print_bitmap_string(char* s) {
+    while (*s) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *s);
+        s++;
+    }
+}
+
+void draw_stuff() {
+    char* bitmap_font_names[7] = { "This is my first text" };
+
+    GLfloat x, y, ystep, yild, stroke_scale;
+
+    /* Draw the strings, according to the current mode and font. */
+    glTranslatef(0.5, 0.5, 0);
+    glColor4f(1.0, 1.0, 0.0, 0.0);
+    x = -225.0;
+    y = 70.0;
+    ystep = 100.0;
+    yild = 20.0;
+    glRasterPos2f(-150, y + 1.25 * yild);
+    print_bitmap_string(bitmap_font_names[0]);
+}
+
+int main(int argc, char** argv) {
+
+
+    // Read the number of elements in the array
+    std::cout << "Enter the number of elements to sort: ";
+    std::cin >> n;
+
+    // Read the elements of the array
+    std::cout << "Enter the elements of the array:\n";
+    for (int i = 0; i < n; i++) {
+        std::cin >> array[i];
+    }
+
+    // Find the minimum and maximum values in the array
+    minVal = array[0];
+    maxVal = array[0];
+    for (int i = 1; i < n; i++) {
+        if (array[i] < minVal) {
+            minVal = array[i];
+        }
+        if (array[i] > maxVal) {
+            maxVal = array[i];
+        }
+    }
+
+    // Initialize OpenGL
+    glutInit(&argc, argv);
+    set_window_size(); // Set window size based on screen dimensions
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutCreateWindow("Merge Sort");
+    init();
+    glutDisplayFunc(display); // Register the display function
+    glutReshapeFunc(reshape); // Register the reshape function
+    display();
+    // Perform merge sort
+    merge_sort(array, 0, n - 1);
+    glutMainLoop();
+
+    return 0;
+}
